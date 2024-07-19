@@ -7,7 +7,7 @@ Event Tracker is a basic tool to search for withdrawal events emitted by Starkwa
 3. `cd event-tracker-v2`
 4. `cargo build --release`
 5. `cargo run --release -- -f <from block-number> -t <to block-number> -n <network mainnet/sepolia>`
-
-A csv output file is created **output.csv** with the following header
+6. Example `cargo run --release -- -f 657447 -t 657586 -n mainnet`
+   A csv output file is created **output.csv** with the following header
 
 > **Tx Hash, Timestamp, From L2 Addr, To L1 Recipient, L1 Token, Amount, Is completed on L1 (zero = yes), Message Hash**
