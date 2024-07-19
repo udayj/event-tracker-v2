@@ -1,0 +1,5 @@
+starknet_rpc_url: "https://rpc.nethermind.io/mainnet-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa"
+eth_rpc_url: "https://mainnet.infura.io/v3/aebb09967b724dfd91107bea3daba50f"
+starkway_l1: "0xCAbb5DDff712598B3c8183B988f082ef3dc74E00"
+starkway_l2: "0x3adccae1d7b4c8832133c0d090b84d4bd85f53a260dee461d51ab8dd07c9ef8"
+starknet_core: "0xc662c410C0ECf747543f5bA90660f6ABeBD9C8c4"
