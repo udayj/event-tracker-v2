@@ -71,7 +71,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
             Arg::with_name("l2_sender")
                 .short("s")
                 .long("sender")
-                .help("Sets L2 sender address as a filter for the events")
+                .help("THIS OPTION IS UNUSED FOR NOW")
                 .takes_value(true)
                 .required(false),
         )
@@ -114,7 +114,7 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
         network_config.starknet_core.clone()
     );
     println!("L2 Sender:{}", formatted_l2_sender);
-
+    let l2_sender = "";
     Ok(Config {
         from_block,
         to_block,

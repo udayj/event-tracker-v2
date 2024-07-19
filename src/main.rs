@@ -52,6 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut cont: Option<String> = Some("initial".to_string());
 
+    let mut index = 1;
     while cont.is_some() {
         if cont.clone().unwrap() == "initial" {
             cont = None;
@@ -73,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(events_page) => {
                 let emitted_events = events_page.events;
                 cont = events_page.continuation_token;
-                let mut index = 1;
+                
                 for event in emitted_events {
                     let l1_recipient = event.keys[0].to_hex_string();
                     let l2_sender = event.keys[1].to_hex_string();
