@@ -19,26 +19,30 @@ use std::{fs::File, str::FromStr};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Get all network config, addresses alongwith block numbers for filtering events
     let config = get_config()?;
 
     let file = File::create("output.csv")?;
     let mut wrt = Writer::from_writer(file);
     let provider = JsonRpcClient::new(HttpTransport::new(Url::parse(&config.starknet_rpc_url)?));
 
+    // This filter will be unused for now since l2_sender in config is currently always empty
     let l2_sender_filter = if config.l2_sender.is_empty() {
         vec![]
     } else {
         vec![Felt::from_hex(&config.l2_sender).unwrap()]
     };
+
     let keys = vec![
         vec![],
         l2_sender_filter,
         vec![],
-        vec![Felt::from_hex("0x5749544844524157").unwrap()],
+        vec![Felt::from_hex("0x5749544844524157").unwrap()], // This hex value corresponds to 'WITHDRAW' in felt
         vec![],
         vec![],
     ];
 
+    // Output file header
     wrt.write_record([
         "Tx Hash",
         "Timestamp",
@@ -54,27 +58,30 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut index = 1;
     while cont.is_some() {
+        // We can do this unwrap here since cont will not be None inside the loop
         if cont.clone().unwrap() == "initial" {
             cont = None;
         }
 
+        // Get events in chunks of 50 events
         let result = provider
             .get_events(
                 EventFilter {
                     from_block: Some(BlockId::Number(config.from_block as u64)),
-                    to_block: Some(BlockId::Number(config.to_block as u64)), // 657586
+                    to_block: Some(BlockId::Number(config.to_block as u64)),
                     address: Some(Felt::from_hex(&config.starkway_l2)?),
                     keys: Some(keys.clone()),
                 },
                 cont.clone(),
-                10,
+                50,
             )
             .await;
+
         match result {
             Ok(events_page) => {
                 let emitted_events = events_page.events;
                 cont = events_page.continuation_token;
-                
+
                 for event in emitted_events {
                     let l1_recipient = event.keys[0].to_hex_string();
                     let l2_sender = event.keys[1].to_hex_string();
@@ -87,6 +94,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let total_value: BigUint = amount_high << 256 | amount_low;
                     let total_value_felt = Felt::from_bytes_be_slice(&total_value.to_bytes_be());
 
+                    // Event data does not have timestamp nor does the transaction data
+                    // Get block number and retrieve timestamp
                     let result_timestamp = provider
                         .get_block_with_tx_hashes(BlockId::Number(block_number))
                         .await;
@@ -95,6 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     match result_timestamp {
                         Ok(pending_block_data) => {
                             match pending_block_data {
+                                // If we find a non-pending block then proceed
                                 MaybePendingBlockWithTxHashes::Block(block_data) => {
                                     let timestamp = block_data.timestamp;
                                     // Convert timestamp to DateTime<Utc>
@@ -114,9 +124,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             formatted = "BLOCK NOT FOUND".to_string();
                         }
                     }
+                    // Form message hash
+                    // Message hash is formed using following solidity code
+                    // bytes32 msgHash = keccak256(
+                    // abi.encodePacked(starkwayL2, uint256(uint160(starkwayL1)), payload.length, payload)
+                    // );
+
                     let starkway_l2 = U256::from_str(&config.starkway_l2)?;
 
                     let starkway_l1 = U256::from_str(&config.starkway_l1)?;
+
+                    // This is the payload sent as a message from L2 to L1 by starkway
                     let payload = [
                         U256::from_str(&l1_token_address).unwrap(),
                         U256::from_str(&l1_recipient).unwrap(),
@@ -133,11 +151,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         packed.extend_from_slice(&item.to_be_bytes::<32>());
                     }
                     let hash = keccak256(&packed);
-                    //println!("Message hash={}", hash);
 
                     let rpc_url = config.eth_rpc_url.parse()?;
 
-                    // Create a provider with the HTTP transport using the `reqwest` crate.
                     let provider = ProviderBuilder::new().on_http(rpc_url);
 
                     sol!(
@@ -150,6 +166,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let contract =
                         Starknet::new(config.starknet_core.as_str().parse().unwrap(), provider);
                     let num_messages = contract.l2ToL1Messages(hash);
+                    // Number of messages > 0 implies that there is an unconsumed message and hence
+                    // incomplete withdrawal on L1
+                    // However, a value of 0 can either mean that message has been consumed or that no message was available
                     let Starknet::l2ToL1MessagesReturn { _0 } = num_messages.call().await.unwrap();
                     let formatted_num_messages = format!("{_0}");
                     wrt.write_record(&[
@@ -162,11 +181,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         formatted_num_messages,
                         hash.to_string(),
                     ])?;
-                    
-                    println!("Found event data for transaction {} with hash:{}", index, tx_hash);
+
+                    println!(
+                        "Found event data for transaction {} with hash:{}",
+                        index, tx_hash
+                    );
                     index += 1;
                 }
-                
             }
             Err(err) => {
                 eprintln!("Error: {}", err);

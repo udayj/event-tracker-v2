@@ -87,18 +87,13 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
         .unwrap();
     let network = matches.value_of("network").unwrap();
     let network_config = load_config(network.to_string())?;
-    let l2_sender = if matches.is_present("l2_sender") {
+    let _l2_sender = if matches.is_present("l2_sender") {
         matches.value_of("l2_sender").unwrap()
     } else {
         ""
     };
 
-    let formatted_l2_sender = if matches.is_present("l2_sender") {
-        matches.value_of("l2_sender").unwrap()
-    } else {
-        "NO L2 SENDER SPECIFIED"
-    };
-
+    // Print all config data to console
     println!("From Block:{}", from_block);
     println!("To Block:{}", to_block);
     println!("Network:{}", network);
@@ -113,7 +108,6 @@ pub fn get_config() -> Result<Config, Box<dyn std::error::Error>> {
         "Starknet Core Address:{}",
         network_config.starknet_core.clone()
     );
-    println!("L2 Sender:{}", formatted_l2_sender);
     let l2_sender = "";
     Ok(Config {
         from_block,
