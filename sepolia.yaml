@@ -1,0 +1,5 @@
+starknet_rpc_url: "https://rpc.nethermind.io/sepolia-juno?apikey=5n1kZyTyMGiYmPn5YtGxlwHYSFTDRGCTGTfzFIn8nGKMdyOa"
+eth_rpc_url: "https://sepolia.infura.io/v3/aebb09967b724dfd91107bea3daba50f"
+starkway_l1: "0xdF1749d882eaD070cc4aA69b74099cA5e4735bdE"
+starkway_l2: "0x534233eb95a16b0d7aeb0fc61c28bf4851dd9db65c26da713147158d4921c93"
+starknet_core: "0xE2Bb56ee936fd6433DC0F6e7e3b8365C906AA057"
